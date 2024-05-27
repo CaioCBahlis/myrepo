@@ -45,7 +45,6 @@ func ScrapInter(c *colly.Collector, EntryPoint string) {
 
 }
 
-
 func ScrapeElements(c *colly.Collector) {
 
 	//var AmazonProduct product;
