@@ -38,12 +38,12 @@ type Item struct {
 
 
 
-func (){
+func main(){
 
   fmt.Println("Search on Amazon da Shoppe:")
   var searchreq string
   fmt.Scanln(&searchreq)
-  URL := constructAmazonSearchURL(searchreq)
+  URL := AmazonSearchURL(searchreq)
 
   fmt.Println("Max_Depth:")
   var MAX_DEPTH int
@@ -90,38 +90,32 @@ func Scrape(c *colly.Collector){
   c.OnHTML("div[data-component-type=s-search-result]", func(e *colly.HTMLElement) {
     var MyItem Item
     
-    e.ForEach("div.a-section.a-spacing-small.a-spacing-top-small", func(i int, SingleGrid *colly.HTMLElement) {
+   
 
-      //fmt.Println(SingleGrid.Text)
-      TitleParent := SingleGrid.DOM.Find("div[data-cy=title-recipe]")
-      PriceParent := SingleGrid.DOM.Find("span.a-price[data-a-size='xl']")
+    //fmt.Println(SingleGrid.Text)
+    TitleParent := e.DOM.Find("div[data-cy=title-recipe]")
+    PriceParent := e.DOM.Find("span.a-price[data-a-size='xl']")
 
-      MyItem.Title = TitleParent.Find("span.a-size-medium.a-color-base.a-text-normal").Text()
-      MyItem.Price = PriceParent.Find("span.a-offscreen").Text()
-      MyItem.Reviews = SingleGrid.ChildText("span.a-icon-alt")
+    MyItem.Title = TitleParent.Find("span.a-size-medium.a-color-base.a-text-normal").Text()
+    MyItem.Price = PriceParent.Find("span.a-offscreen").Text()
+    MyItem.Reviews = e.ChildText("span.a-icon-alt")
+      
+    if MyItem.Title == ""{
+      MyItem.Title =  TitleParent.Find("span.a-size-base-plus.a-color-base.a-text-normal").Text()
+      MyItem.Price =  PriceParent.Find("span.a-offscreen").Text()
+    }
     
-
-    })
+    PUrl, error  := e.DOM.Find("a.a-link-normal.s-no-outline").Attr("href")
+    if error{
+      fmt.Println(error)
+    }
     
+    MyItem.ProductUrl = "https://www.amazon.com/" + PUrl
+    MyItem.IMGUrl = e.ChildAttr("img.s-image","src")
+    MyItem.seller = "Amazon"
+    
+   
   
-    e.ForEach("div.a-section.a-spacing-small.puis-padding-left-small.puis-padding-right-small", func(i int, quadgrid *colly.HTMLElement) {
-      TitleParent := quadgrid.DOM.Find("div[data-cy=title-recipe]")
-      PriceParent := quadgrid.DOM.Find("span.a-price[data-a-size='xl']")
-
-      if MyItem.Title == ""{
-        MyItem.Title =  TitleParent.Find("span.a-size-base-plus.a-color-base.a-text-normal").Text()
-        MyItem.Price =  PriceParent.Find("span.a-offscreen").Text()
-        MyItem.Reviews =  quadgrid.ChildText("span.a-icon-alt")
-       }
-      
-    })
-
-    e.ForEach("a.a-link-normal.s-no-outline", func(i int, singleURL *colly.HTMLElement) {
-      MyItem.ProductUrl = "https://www.amazon.com" + singleURL.Attr("href")
-      MyItem.IMGUrl = singleURL.ChildAttr("img.s-image","src")
-      MyItem.seller = "Amazon"
-      
-  })
 
   JsonVal, err := json.Marshal(MyItem)
   if err != nil{
@@ -136,7 +130,7 @@ func Scrape(c *colly.Collector){
 
 }
 
-func constructAmazonSearchURL(product string) string {
+func AmazonSearchURL(product string) string {
 	baseURL := "https://www.amazon.com/s"
 	params := url.Values{}
 	params.Add("k", product)
